@@ -71,6 +71,8 @@ for c in contours:
 # cv2.imshow('image', test)
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
+
+# Display and/or save images
 titles = None
 n_images = len(tiles)
 if titles is None:
@@ -82,5 +84,6 @@ for n, (image, title) in enumerate(zip(tiles, titles)):
         plt.gray()
     plt.imshow(image)
     a.set_title(title)
+    plt.imsave("sample_tiles/{}.png".format(str(np.random.randint(1000))), image)
 fig.set_size_inches(np.array(fig.get_size_inches()) * n_images)
 plt.show()
