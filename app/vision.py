@@ -3,6 +3,8 @@ import imutils
 import numpy as np
 import pytesseract
 
+from tile import Tile
+
 TARGET = (76, 21, 38)  # Color of the game window
 BONUS_2W = (121, 56, 242)
 BONUS_2L = (217, 200, 133)
@@ -25,7 +27,7 @@ class Vision:
         game_window = self.crop_game()
         tiles = self.find_tiles(game_window)
 
-        return tiles
+        return self.arrange_tiles(tiles)
 
     def crop_game(self):
         # Focus detection on game window
@@ -51,6 +53,8 @@ class Vision:
         return game_th
 
     def find_tiles(self, game_window):
+        print("Finding tiles...")
+
         # ref: https://docs.opencv.org/3.4/d3/db4/tutorial_py_watershed.html
         kernel = np.ones((3, 3), np.uint8)
         erosion = cv2.erode(game_window, kernel, iterations=5)
@@ -72,9 +76,9 @@ class Vision:
                 tile_y = self.game_y + y
                 # cv2.rectangle(image, (tile_x, tile_y), (tile_x + TILE_LENGTH, tile_y + TILE_LENGTH), (0, 255, 0), 1)
                 tile = self.screenshot_gray[tile_y:tile_y + TILE_LENGTH, tile_x:tile_x + TILE_LENGTH].copy()
-                tile = self.extract_letter(tile)
+                tile_letter = self.extract_letter(tile)
+                tile = Tile(tile_letter, tile_x, tile_y)
                 tiles.append(tile)
-                # break
 
         return tiles
 
@@ -89,3 +93,11 @@ class Vision:
         result = cv2.bitwise_not(dilate)
 
         return pytesseract.image_to_string(result, config='--oem 1 --psm 10', lang='eng')
+
+    @staticmethod
+    def arrange_tiles(tiles):
+        sorted_y = sorted(tiles, key=lambda x: x.y)
+        sorted_y = [sorted_y[i:i+4] for i in range(0, len(tiles), 4)]
+        sorted_x = [sorted(row, key=lambda x: x.x) for row in sorted_y]
+
+        return np.array(sorted_x)

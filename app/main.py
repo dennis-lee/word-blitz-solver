@@ -1,5 +1,6 @@
 from board import Board
 from trie import Trie
+from vision import Vision
 
 
 if __name__ == '__main__':
@@ -7,10 +8,14 @@ if __name__ == '__main__':
 
     i = 'start'
     while i != 'quit':
-        b = input("Enter grid:\n")  # Sample grid: 'aelb,cate,slir,ipas'
+        b = input("New game? (Y/N)\n")  # Sample grid: 'aelb,cate,slir,ipas'
 
-        if b == 'quit':
+        if b == 'n' or b == 'N':
             break
 
-        b = Board(b, t.root)
-        b.solve()
+        elif b == 'y' or b == 'Y':
+            v = Vision('resources/screenshot.png')
+            state = v.generate_tiles()
+
+            b = Board(state, t.root)
+            b.solve()

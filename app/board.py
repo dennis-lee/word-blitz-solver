@@ -1,21 +1,22 @@
 import numpy as np
 
-from tile import Tile
-
 
 class Board:
     def __init__(self, state, trie):
         self.trie = trie
         self.tiles = []
 
-        # Instantiate Tile objects
-        board = np.array([[c for c in row] for row in state.split(',')])
-        board = np.pad(board, (1, 1), 'constant', constant_values='0')
+        self.map_tiles(state)
+
+    def map_tiles(self, state):
+        print("Mapping tiles...")
+
+        board = np.pad(state, (1, 1), 'constant', constant_values='0')
         padded_board = np.empty((board.shape[0], board.shape[1]), dtype=object)
 
         for y in range(1, board.shape[0] - 1):
             for x in range(1, board.shape[1] - 1):
-                padded_board[y, x] = Tile(board[y, x])
+                padded_board[y, x] = board[y, x]
 
         for y in range(1, padded_board.shape[0] - 1):
             for x in range(1, padded_board.shape[1] - 1):
@@ -27,6 +28,8 @@ class Board:
                 self.tiles.append(t)
 
     def solve(self):
+        print("Solving...")
+
         def __build_words(current_tile, current_node, selected_tiles, current_word, valid_words):
             if not len(current_node.children):
                 valid_words.add(current_word)
