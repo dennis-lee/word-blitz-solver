@@ -1,8 +1,11 @@
 import numpy as np
+import pyautogui
+
+from word import Word
 
 
 class Board:
-    def __init__(self, state, trie):
+    def __init__(self, state, trie, debug=False):
         self.trie = trie
         self.tiles = []
 
@@ -45,7 +48,8 @@ class Board:
                 for neighbour in neighbours:
                     if neighbour.letter in current_node.children:
                         next_node = current_node.get_child(neighbour.letter)
-                        new_word = '{}{}'.format(current_word, neighbour.letter)
+                        new_word = Word(current_word.copy_tiles())
+                        new_word.add_tile(neighbour)
 
                         __build_words(
                             neighbour,
@@ -63,7 +67,7 @@ class Board:
                 tile,
                 self.trie.get_child(tile.letter),
                 set(),
-                tile.letter,
+                Word([tile]),
                 words
             )
 
@@ -73,4 +77,16 @@ class Board:
                 print('### {}'.format(tile))
                 print(sorted(list(words), key=len, reverse=True))
 
+                for word in words:
+                    self.connect_tiles(word)
+
         print("\nTotal words: {}\n".format(total_words))
+
+    @staticmethod
+    def connect_tiles(word):
+        print(word)
+
+        for (x, y) in word.get_trail():
+            pyautogui.mouseDown(x=x, y=y, button='left')
+
+        pyautogui.mouseUp()

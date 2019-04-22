@@ -11,7 +11,8 @@ BONUS_2L = (217, 200, 133)
 BONUS_3L = (251, 144, 187)
 lower = np.array([TARGET[0] - 10, TARGET[1] - 10, TARGET[2] - 38], dtype=np.uint8)
 upper = np.array([TARGET[0] + 10, TARGET[1] + 10, TARGET[2] + 38], dtype=np.uint8)
-TILE_LENGTH = 64
+MARGIN_LEFT = 8
+MARGIN_RIGHT = 16
 
 
 class Vision:
@@ -30,6 +31,8 @@ class Vision:
         return self.arrange_tiles(tiles)
 
     def crop_game(self):
+        print("Finding game window...")
+
         # Focus detection on game window
         window_mask = cv2.inRange(self.screenshot, lower, upper)
         game_window = cv2.bitwise_and(self.screenshot, self.screenshot, mask=window_mask)
@@ -42,25 +45,28 @@ class Vision:
         self.game_x, self.game_y, self.game_w, self.game_h = cv2.boundingRect(points)
 
         # Crop game window
-        game_image = self.screenshot[
+        game_image = output_th[
                         self.game_y:(self.game_y + self.game_h),
                         self.game_x:(self.game_x + self.game_w)
                      ].copy()
-        game_gray = cv2.cvtColor(game_image, cv2.COLOR_BGR2GRAY)
-        game_blur = cv2.GaussianBlur(game_gray, (45, 45), 0)
-        _, game_th = cv2.threshold(game_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        game_image = cv2.bitwise_not(game_image)
 
-        return game_th
+        return game_image
 
     def find_tiles(self, game_window):
         print("Finding tiles...")
 
         # ref: https://docs.opencv.org/3.4/d3/db4/tutorial_py_watershed.html
-        kernel = np.ones((3, 3), np.uint8)
-        erosion = cv2.erode(game_window, kernel, iterations=5)
+        kernel = np.ones((20, 20), np.uint8)
+        erosion = cv2.erode(game_window, kernel, iterations=4)
+        dilate = cv2.dilate(erosion, kernel, iterations=4)
+
+        cv2.imshow('img', dilate)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
         # ref: https://www.pyimagesearch.com/2014/04/21/building-pokedex-python-finding-game-boy-screen-step-4-6/
-        contours = cv2.findContours(erosion.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours = cv2.findContours(dilate.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         contours = imutils.grab_contours(contours)
 
         tiles = []
@@ -74,10 +80,11 @@ class Vision:
                 y = approx[0][0][1]
                 tile_x = self.game_x + x
                 tile_y = self.game_y + y
-                # cv2.rectangle(image, (tile_x, tile_y), (tile_x + TILE_LENGTH, tile_y + TILE_LENGTH), (0, 255, 0), 1)
-                tile = self.screenshot_gray[tile_y:tile_y + TILE_LENGTH, tile_x:tile_x + TILE_LENGTH].copy()
+                tile_width = int(peri/4)
+
+                tile = self.screenshot_gray[tile_y:tile_y + tile_width, tile_x:tile_x + tile_width].copy()
                 tile_letter = self.extract_letter(tile)
-                tile = Tile(tile_letter, tile_x, tile_y)
+                tile = Tile(tile_letter, tile_x + (tile_width/2), tile_y + (tile_width/2))
                 tiles.append(tile)
 
         return tiles
@@ -89,10 +96,21 @@ class Vision:
         target = cv2.bitwise_and(result, result, mask=mask)
         kernel = np.ones((2, 2), np.uint8)
         erode = cv2.erode(target, kernel, iterations=2)
-        dilate = cv2.dilate(erode, kernel, iterations=3)
-        result = cv2.bitwise_not(dilate)
+        dilate = cv2.dilate(erode, kernel, iterations=4)
+        erode = cv2.erode(dilate, kernel, iterations=2)
+        _, th = cv2.threshold(erode, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        th = th[MARGIN_LEFT:th.shape[0] - MARGIN_RIGHT, MARGIN_LEFT:th.shape[1] - MARGIN_RIGHT]
+        result = cv2.bitwise_not(th)
 
-        return pytesseract.image_to_string(result, config='--oem 1 --psm 10', lang='eng')
+        tess_cfg = '-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ ' \
+                   '--tessdata-dir "C:/Program Files/Tesseract-OCR/tessdata" ' \
+                   '--oem 0 ' \
+                   '--psm 10'
+
+        tess_cfg_default = '--oem 2 ' \
+                        '--psm 10'
+
+        return pytesseract.image_to_string(result, config=tess_cfg, lang='eng')
 
     @staticmethod
     def arrange_tiles(tiles):
