@@ -1,6 +1,7 @@
 class Tile:
-    def __init__(self, letter, x, y):
+    def __init__(self, letter, value, x, y):
         self.letter = str.lower(letter)
+        self.value = int(value)
         self.x = x
         self.y = y
         self.nw = None
