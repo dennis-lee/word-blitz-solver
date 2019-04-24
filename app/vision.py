@@ -23,6 +23,7 @@ class Vision:
         self.game_y = 0
         self.game_h = 0
         self.game_w = 0
+        self.game_offset_h = 0
 
     def generate_tiles(self):
         game_window = self.crop_game()
@@ -43,10 +44,11 @@ class Vision:
         # Get window coordinates and dimension
         points = cv2.findNonZero(output_th)
         self.game_x, self.game_y, self.game_w, self.game_h = cv2.boundingRect(points)
+        self.game_offset_h = int(self.game_h/3) - 32
 
         # Crop game window
         game_image = output_th[
-                        self.game_y:(self.game_y + self.game_h),
+                        self.game_y + self.game_offset_h:(self.game_y + self.game_h),
                         self.game_x:(self.game_x + self.game_w)
                      ].copy()
         game_image = cv2.bitwise_not(game_image)
@@ -57,9 +59,9 @@ class Vision:
         print("Finding tiles...")
 
         # ref: https://docs.opencv.org/3.4/d3/db4/tutorial_py_watershed.html
-        kernel = np.ones((20, 20), np.uint8)
-        erosion = cv2.erode(game_window, kernel, iterations=4)
-        dilate = cv2.dilate(erosion, kernel, iterations=4)
+        kernel = np.ones((25, 25), np.uint8)
+        erosion = cv2.erode(game_window, kernel, iterations=2)
+        dilate = cv2.dilate(erosion, kernel, iterations=2)
 
         cv2.imshow('img', dilate)
         cv2.waitKey(0)
@@ -79,7 +81,7 @@ class Vision:
                 x = approx[0][0][0]
                 y = approx[0][0][1]
                 tile_x = self.game_x + x
-                tile_y = self.game_y + y
+                tile_y = self.game_y + self.game_offset_h + y
                 tile_width = int(peri/4)
 
                 tile = self.screenshot_gray[tile_y:tile_y + tile_width, tile_x:tile_x + tile_width].copy()
