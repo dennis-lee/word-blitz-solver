@@ -11,8 +11,6 @@ BONUS_2L = (217, 200, 133)
 BONUS_3L = (251, 144, 187)
 lower = np.array([TARGET[0] - 10, TARGET[1] - 10, TARGET[2] - 38], dtype=np.uint8)
 upper = np.array([TARGET[0] + 10, TARGET[1] + 10, TARGET[2] + 38], dtype=np.uint8)
-MARGIN_LEFT = 8
-MARGIN_RIGHT = 16
 
 
 class Vision:
@@ -63,10 +61,6 @@ class Vision:
         erosion = cv2.erode(game_window, kernel, iterations=2)
         dilate = cv2.dilate(erosion, kernel, iterations=2)
 
-        cv2.imshow('img', dilate)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
         # ref: https://www.pyimagesearch.com/2014/04/21/building-pokedex-python-finding-game-boy-screen-step-4-6/
         contours = cv2.findContours(dilate.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         contours = imutils.grab_contours(contours)
@@ -85,8 +79,12 @@ class Vision:
                 tile_width = int(peri/4)
 
                 tile = self.screenshot_gray[tile_y:tile_y + tile_width, tile_x:tile_x + tile_width].copy()
-                tile_letter = self.extract_letter(tile)
-                tile = Tile(tile_letter, tile_x + (tile_width/2), tile_y + (tile_width/2))
+                tile_letter, tile_value = self.extract_letter(tile)
+                tile = Tile(letter=tile_letter,
+                            value=tile_value,
+                            x=tile_x + (tile_width/2),
+                            y=tile_y + (tile_width/2)
+                            )
                 tiles.append(tile)
 
         return tiles
@@ -96,23 +94,21 @@ class Vision:
         result = cv2.bitwise_not(tile_image)
         mask = cv2.inRange(result, np.array([205], dtype=np.uint8), np.array([255], dtype=np.uint8))
         target = cv2.bitwise_and(result, result, mask=mask)
-        kernel = np.ones((2, 2), np.uint8)
-        erode = cv2.erode(target, kernel, iterations=2)
-        dilate = cv2.dilate(erode, kernel, iterations=4)
-        erode = cv2.erode(dilate, kernel, iterations=2)
-        _, th = cv2.threshold(erode, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        th = th[MARGIN_LEFT:th.shape[0] - MARGIN_RIGHT, MARGIN_LEFT:th.shape[1] - MARGIN_RIGHT]
-        result = cv2.bitwise_not(th)
+        _, th = cv2.threshold(target, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-        tess_cfg = '-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ ' \
+        tess_cfg = '-c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ ' \
                    '--tessdata-dir "C:/Program Files/Tesseract-OCR/tessdata" ' \
                    '--oem 0 ' \
-                   '--psm 10'
+                   '--psm 8'
 
         tess_cfg_default = '--oem 2 ' \
                         '--psm 10'
 
-        return pytesseract.image_to_string(result, config=tess_cfg, lang='eng')
+        letter_and_value = pytesseract.image_to_string(th, config=tess_cfg, lang='eng')
+
+        print(letter_and_value)
+
+        return letter_and_value[0], letter_and_value[1]
 
     @staticmethod
     def arrange_tiles(tiles):
