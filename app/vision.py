@@ -17,6 +17,7 @@ class Vision:
     def __init__(self, image):
         self.screenshot = cv2.imread(image)
         self.screenshot_gray = cv2.cvtColor(self.screenshot, cv2.COLOR_BGR2GRAY)
+        self.screenshot_hsv = cv2.cvtColor(self.screenshot, cv2.COLOR_BGR2HSV)
         self.game_x = 0
         self.game_y = 0
         self.game_h = 0
@@ -78,7 +79,7 @@ class Vision:
                 tile_y = self.game_y + self.game_offset_h + y
                 tile_width = int(peri/4)
 
-                tile = self.screenshot_gray[tile_y:tile_y + tile_width, tile_x:tile_x + tile_width].copy()
+                tile = self.screenshot_hsv[tile_y:tile_y + tile_width, tile_x:tile_x + tile_width].copy()
                 tile_letter, tile_value = self.extract_letter(tile)
                 tile = Tile(letter=tile_letter,
                             value=tile_value,
@@ -91,10 +92,9 @@ class Vision:
 
     @staticmethod
     def extract_letter(tile_image):
-        result = cv2.bitwise_not(tile_image)
-        mask = cv2.inRange(result, np.array([205], dtype=np.uint8), np.array([255], dtype=np.uint8))
-        target = cv2.bitwise_and(result, result, mask=mask)
-        _, th = cv2.threshold(target, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        lower_gray = np.array([0, 0, 0])
+        upper_gray = np.array([0, 0, 30])
+        mask = cv2.inRange(tile_image, lower_gray, upper_gray)
 
         tess_cfg = '-c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ ' \
                    '--tessdata-dir "C:/Program Files/Tesseract-OCR/tessdata" ' \
@@ -104,7 +104,7 @@ class Vision:
         tess_cfg_default = '--oem 2 ' \
                         '--psm 10'
 
-        letter_and_value = pytesseract.image_to_string(th, config=tess_cfg, lang='eng')
+        letter_and_value = pytesseract.image_to_string(mask, config=tess_cfg, lang='eng')
 
         print(letter_and_value)
 
