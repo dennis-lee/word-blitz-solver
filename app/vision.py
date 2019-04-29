@@ -92,9 +92,9 @@ class Vision:
 
     @staticmethod
     def extract_letter(tile_image):
-        lower_gray = np.array([0, 0, 0])
-        upper_gray = np.array([0, 0, 30])
-        mask = cv2.inRange(tile_image, lower_gray, upper_gray)
+        lower_bg = np.array([0, 0, 0])
+        upper_bg = np.array([330, 100, 93])
+        mask = cv2.inRange(tile_image, lower_bg, upper_bg)
 
         tess_cfg = '-c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ ' \
                    '--tessdata-dir "C:/Program Files/Tesseract-OCR/tessdata" ' \
@@ -108,7 +108,7 @@ class Vision:
 
         print(letter_and_value)
 
-        return letter_and_value[0], letter_and_value[1]
+        return letter_and_value[0], letter_and_value[1:]
 
     @staticmethod
     def arrange_tiles(tiles):
