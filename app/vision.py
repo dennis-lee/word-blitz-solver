@@ -80,9 +80,8 @@ class Vision:
                 tile_width = int(peri/4)
 
                 tile = self.screenshot_hsv[tile_y:tile_y + tile_width, tile_x:tile_x + tile_width].copy()
-                tile_letter, tile_value = self.extract_letter(tile)
+                tile_letter = self.extract_letter(tile)
                 tile = Tile(letter=tile_letter,
-                            value=tile_value,
                             x=tile_x + (tile_width/2),
                             y=tile_y + (tile_width/2)
                             )
@@ -96,7 +95,7 @@ class Vision:
         upper_bg = np.array([330, 100, 93])
         mask = cv2.inRange(tile_image, lower_bg, upper_bg)
 
-        tess_cfg = '-c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ ' \
+        tess_cfg = '-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ ' \
                    '--tessdata-dir "C:/Program Files/Tesseract-OCR/tessdata" ' \
                    '--oem 0 ' \
                    '--psm 8'
@@ -104,11 +103,11 @@ class Vision:
         tess_cfg_default = '--oem 2 ' \
                         '--psm 10'
 
-        letter_and_value = pytesseract.image_to_string(mask, config=tess_cfg, lang='eng')
+        result = pytesseract.image_to_string(mask, config=tess_cfg, lang='eng')
 
-        print(letter_and_value)
+        print(result[0])
 
-        return letter_and_value[0], letter_and_value[1:]
+        return result[0]
 
     @staticmethod
     def arrange_tiles(tiles):
