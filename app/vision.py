@@ -5,12 +5,13 @@ import pytesseract
 
 from tile import Tile
 
-TARGET = (76, 21, 38)  # Color of the game window
+# TARGET = (76, 21, 38)  # Color of the game window
+TARGET = (130, 212, 65)
 BONUS_2W = (121, 56, 242)
 BONUS_2L = (217, 200, 133)
 BONUS_3L = (251, 144, 187)
-lower = np.array([TARGET[0] - 10, TARGET[1] - 10, TARGET[2] - 38], dtype=np.uint8)
-upper = np.array([TARGET[0] + 10, TARGET[1] + 10, TARGET[2] + 38], dtype=np.uint8)
+lower = np.array([TARGET[0] - 10, TARGET[1] - 35, TARGET[2] - 40], dtype=np.uint8)
+upper = np.array([TARGET[0] + 10, TARGET[1] + 35, TARGET[2] + 40], dtype=np.uint8)
 
 
 class Vision:
@@ -34,8 +35,8 @@ class Vision:
         print("Finding game window...")
 
         # Focus detection on game window
-        window_mask = cv2.inRange(self.screenshot, lower, upper)
-        game_window = cv2.bitwise_and(self.screenshot, self.screenshot, mask=window_mask)
+        window_mask = cv2.inRange(self.screenshot_hsv, lower, upper)
+        game_window = cv2.bitwise_and(self.screenshot_hsv, self.screenshot_hsv, mask=window_mask)
         output_gray = cv2.cvtColor(game_window, cv2.COLOR_BGR2GRAY)
         output_blur = cv2.GaussianBlur(output_gray, (25, 25), 0)
         _, output_th = cv2.threshold(output_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)

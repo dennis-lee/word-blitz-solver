@@ -86,7 +86,16 @@ class Board:
     def connect_tiles(word):
         print(word)
 
-        for (x, y) in word.get_trail():
-            pyautogui.mouseDown(x=x, y=y, button='left')
+        trail = word.get_trail()
+        start = trail[0]
+
+        pyautogui.moveTo(x=start[0], y=start[1])
+        pyautogui.mouseDown()
+
+        for (x, y) in trail:
+            pyautogui.dragTo(x=x, y=y, duration=0.1, mouseDownUp=False)
+            # pyautogui.mouseDown()
+            # pyautogui.dragTo(x=x, y=y)
+            # pyautogui.mouseDown(x=x, y=y, duration=1)
 
         pyautogui.mouseUp()
